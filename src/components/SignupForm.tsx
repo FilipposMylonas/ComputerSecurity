@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import ReCAPTCHA from "react-google-recaptcha";
-import PasswordStrengthMeter from "./PasswordStrengthMeter";
+import PasswordCheck from "./PasswordCheck";
 
 const SignupForm: React.FC = () => {
     const [name, setName] = useState("");
@@ -114,7 +114,7 @@ const SignupForm: React.FC = () => {
                         />
 
                         {/* Password strength meter component */}
-                        <PasswordStrengthMeter password={password} />
+                        <PasswordCheck password={password} />
                     </div>
 
                     <input

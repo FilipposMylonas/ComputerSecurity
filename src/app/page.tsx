@@ -114,7 +114,7 @@ export default function LandingPage() {
         <footer className="bg-[#212121] py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 text-center ">
             <p className="text-gray-400  ">
-              © {new Date().getFullYear()} SecureAuth. All rights reserved.
+              © {new Date().getFullYear()} Group 130. All rights reserved.
             </p>
             <div className="mt-4 space-x-4">
               <Link href="/terms" className="text-gray-300 hover:text-white">

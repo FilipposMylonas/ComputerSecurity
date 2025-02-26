@@ -16,20 +16,6 @@ export default function LandingPage() {
                   ComputerSecurity Group 130
                 </Link>
               </div>
-              <div className="flex space-x-4">
-                <Link
-                    href="/login"
-                    className="px-4 py-2 rounded-md bg-white text-black hover:bg-gray-200 transition-colors"
-                >
-                  Login
-                </Link>
-                <Link
-                    href="/signup"
-                    className="px-4 py-2 rounded-md border border-white hover:bg-white hover:text-black transition-colors"
-                >
-                  Sign Up
-                </Link>
-              </div>
             </div>
           </div>
         </nav>
@@ -44,10 +30,10 @@ export default function LandingPage() {
                 className="text-center"
             >
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 pt-16">
-                Secure Authentication <br /> Made Simple
+                Secure Authentication <br /> For BSC2420 - Computer Security
               </h1>
               <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-10">
-                Protect your application with robust, modern authentication that keeps your users safe without compromising on user experience.
+                A robust, hard to get into user log in.
               </p>
 
               <div className="flex justify-center space-x-4">

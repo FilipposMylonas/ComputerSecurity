@@ -9,6 +9,7 @@ export default function LoginForm() {
     const [loginAttempts, setLoginAttempts] = useState(0);
     const [isBlocked, setIsBlocked] = useState(false);
     const [blockTimer, setBlockTimer] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Validation errors
     const [emailError, setEmailError] = useState("");
@@ -17,6 +18,31 @@ export default function LoginForm() {
 
     // Form submission state
     const [isFormValid, setIsFormValid] = useState(false);
+
+    // VULNERABILITY 1: Storing attempt data in localStorage where it can be manipulated
+    useEffect(() => {
+        // Load previous attempts from localStorage (vulnerable to user manipulation)
+        const storedAttempts = localStorage.getItem('loginAttempts');
+        const storedBlockTime = localStorage.getItem('blockUntil');
+
+        if (storedAttempts) {
+            setLoginAttempts(parseInt(storedAttempts));
+        }
+
+        if (storedBlockTime) {
+            const blockUntil = parseInt(storedBlockTime);
+            const now = new Date().getTime();
+
+            if (blockUntil > now) {
+                setIsBlocked(true);
+                setBlockTimer(Math.ceil((blockUntil - now) / 1000));
+            } else {
+                // Clear expired block
+                localStorage.removeItem('blockUntil');
+                localStorage.removeItem('loginAttempts');
+            }
+        }
+    }, []);
 
     // Validate form when inputs change
     useEffect(() => {
@@ -34,15 +60,21 @@ export default function LoginForm() {
         if (isBlocked && blockTimer > 0) {
             const timer = setTimeout(() => {
                 setBlockTimer(blockTimer - 1);
+
+                // VULNERABILITY 2: Updates localStorage on each tick (can be inspected)
+                localStorage.setItem('blockUntil', String(new Date().getTime() + blockTimer * 1000));
             }, 1000);
 
             return () => clearTimeout(timer);
         } else if (isBlocked && blockTimer === 0) {
             setIsBlocked(false);
             setLoginAttempts(0);
+
+            // VULNERABILITY 3: Can be easily bypassed by clearing localStorage
+            localStorage.removeItem('loginAttempts');
+            localStorage.removeItem('blockUntil');
         }
     }, [isBlocked, blockTimer]);
-
 
     const validatePasswordField = () => {
         // For login, we only check if the password is not empty
@@ -54,35 +86,85 @@ export default function LoginForm() {
         return { isValid: true, message: "" };
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // VULNERABILITY 4: Account enumeration - different error for invalid email vs password
+    const validateEmail = () => {
+        if (!email) {
+            setEmailError("Email is required");
+            return { isValid: false, message: "Email is required" };
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setEmailError("Please enter a valid email address");
+            return { isValid: false, message: "Invalid email format" };
+        }
+
+        setEmailError("");
+        return { isValid: true, message: "" };
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setGeneralError("");
+
+        // Validate inputs
+        const emailValidation = validateEmail();
+        const passwordValidation = validatePasswordField();
+
+        if (!emailValidation.isValid || !passwordValidation.isValid) {
+            return;
+        }
 
         if (isBlocked) {
             setGeneralError(`Too many failed attempts. Please wait ${blockTimer} seconds.`);
             return;
         }
 
+        try {
+            setIsSubmitting(true);
 
+            // VULNERABILITY 5: Simple credentials check that could be bypassed with XSS
+            // Simulate API call with a delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
+            // Hardcoded credential check for demo purposes - INSECURE!
+            const isValidCredential = email === "admin@example.com" && password === "password123";
 
+            if (isValidCredential) {
+                // Successful login
+                setLoginAttempts(0);
+                localStorage.removeItem('loginAttempts');
+                localStorage.removeItem('blockUntil');
 
-            //--------PADURARU BACKEND LOGIC----------
-
-
-
-            // Simulating a failed login attempt for demonstration purposes
-            const newAttempts = loginAttempts + 1;
-            setLoginAttempts(newAttempts);
-
-            // Block the account after 3 failed attempts
-            if (newAttempts >= 3) {
-                setIsBlocked(true);
-                setBlockTimer(30); // 30 seconds block
-                setGeneralError("Too many failed attempts. Please wait 30 seconds.");
+                // Would typically redirect or update auth state here
+                alert("Login successful!");
             } else {
-                setGeneralError(`Invalid credentials. Attempts: ${newAttempts}/3`);
-            }
+                // Failed login attempt
+                const newAttempts = loginAttempts + 1;
+                setLoginAttempts(newAttempts);
+                localStorage.setItem('loginAttempts', String(newAttempts));
 
+                // VULNERABILITY 6: Using small, fixed number of attempts with no IP-based blocking
+                if (newAttempts >= 3) {
+                    const blockDuration = 30; // 30 seconds block
+                    const blockUntil = new Date().getTime() + (blockDuration * 1000);
+
+                    setIsBlocked(true);
+                    setBlockTimer(blockDuration);
+                    localStorage.setItem('blockUntil', String(blockUntil));
+
+                    setGeneralError(`Too many failed attempts. Please wait ${blockDuration} seconds.`);
+                } else {
+                    // VULNERABILITY 7: Revealing attempt count to user
+                    setGeneralError(`Invalid credentials. Attempts: ${newAttempts}/3`);
+                }
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            setGeneralError("An error occurred. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -104,6 +186,7 @@ export default function LoginForm() {
                         placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        onBlur={validateEmail}
                         error={emailError}
                         required
                     />
@@ -118,6 +201,20 @@ export default function LoginForm() {
                         required
                     />
 
+                    {/* VULNERABILITY 8: Status indication reveals account blocking state */}
+                    <div className="flex justify-between items-center">
+                        <div className="text-xs text-gray-400">
+                            {loginAttempts > 0 && (
+                                <span>Attempts: {loginAttempts}/3</span>
+                            )}
+                        </div>
+                        {isBlocked && (
+                            <div className="text-xs text-red-400">
+                                Account temporarily locked
+                            </div>
+                        )}
+                    </div>
+
                     <button
                         type="submit"
                         className={`w-full font-bold py-2 px-4 rounded ${
@@ -125,9 +222,9 @@ export default function LoginForm() {
                                 ? "bg-white hover:bg-gray-200 text-black"
                                 : "bg-gray-600 text-gray-300 cursor-not-allowed"
                         }`}
-                        disabled={!isFormValid || isBlocked}
+                        disabled={!isFormValid || isBlocked || isSubmitting}
                     >
-                        {isBlocked ? `Blocked (${blockTimer}s)` : "Login"}
+                        {isSubmitting ? "Logging in..." : isBlocked ? `Blocked (${blockTimer}s)` : "Login"}
                     </button>
                 </form>
 
@@ -142,6 +239,17 @@ export default function LoginForm() {
                     <Link href="#" className="text-sm text-gray-400 hover:text-white">
                         Forgot password?
                     </Link>
+                </div>
+
+                {/* VULNERABILITY 9: Debug information visible in production */}
+                <div className="mt-6 p-2 border border-gray-700 rounded bg-gray-800">
+                    <div className="text-xs text-gray-400">
+                        <p>Debug Info (remove in production):</p>
+                        <p>Login attempts: {loginAttempts}</p>
+                        <p>Blocked status: {isBlocked ? "Yes" : "No"}</p>
+                        <p>Block timer: {blockTimer}s</p>
+                        <p>Demo credentials: admin@example.com / password123</p>
+                    </div>
                 </div>
             </div>
         </div>

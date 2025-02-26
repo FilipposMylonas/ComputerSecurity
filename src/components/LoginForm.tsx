@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import FormInput from "./FormInput";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Shield, Lock, User } from "lucide-react";
 
 export default function SecureLoginForm() {
     const router = useRouter();
@@ -163,74 +164,88 @@ export default function SecureLoginForm() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-[#181818]">
-            <div className="bg-[#212121] p-8 rounded-xl shadow-md w-full max-w-md">
-                <h2 className="text-2xl font-bold text-white mb-6 text-center">
-                    Login
-                </h2>
+        <div className="min-h-screen bg-[#181818] text-white">
+            {/* Signup Form */}
+            <div className="flex items-center justify-center min-h-screen pt-16 px-4 sm:px-6 lg:px-8">
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="bg-[#212121] p-8 rounded-xl shadow-md w-full max-w-md"
+                >
+                    <h2 className="text-2xl font-bold text-white mb-6 text-center flex items-center justify-center">
+                        <Lock className="mr-2" size={30} /> Login
+                    </h2>
 
-                {generalError && (
-                    <div className="mb-4 p-3 bg-red-700 text-white rounded-md text-sm">
-                        {generalError}
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <FormInput
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        onBlur={() => validateEmail()}
-                        error={emailError}
-                        required
-                        aria-label="Email address"
-                    />
-
-                    <FormInput
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        onBlur={() => validatePasswordField()}
-                        error={passwordError}
-                        required
-                        aria-label="Password"
-                    />
-
-                    {/* FIXED: No login attempt counter visible to user */}
-                    {isTemporaryBlocked && (
-                        <div className="text-xs text-red-400 text-center">
-                            Account temporarily locked. Try again in {blockTimeRemaining} seconds.
+                    {generalError && (
+                        <div className="mb-4 p-3 bg-red-700 text-white rounded-md text-sm">
+                            {generalError}
                         </div>
                     )}
 
-                    <button
-                        type="submit"
-                        className={`w-full font-bold py-2 px-4 rounded ${
-                            isFormValid && !isTemporaryBlocked && !isSubmitting
-                                ? "bg-white hover:bg-gray-200 text-black"
-                                : "bg-gray-600 text-gray-300 cursor-not-allowed"
-                        }`}
-                        disabled={!isFormValid || isTemporaryBlocked || isSubmitting}
-                        aria-label="Login button"
-                    >
-                        {isSubmitting ? "Logging in..." : isTemporaryBlocked ? `Try again in ${blockTimeRemaining}s` : "Login"}
-                    </button>
-                </form>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <input
+                                type="email"
+                                placeholder="Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                onBlur={() => validateEmail()}
+                                required
+                                aria-label="Email address"
+                                className="w-full px-4 py-2 rounded-md bg-[#0e0e0e] text-white focus:outline-none focus:ring-2 focus:ring-white"
+                            />
+                            {emailError && <p className="mt-1 text-sm text-red-500">{emailError}</p>}
+                        </div>
 
-                <p className="mt-4 text-center text-gray-400">
-                    Don't have an account?{" "}
-                    <Link href="/signup" className="text-white underline">
-                        Sign up
-                    </Link>
-                </p>
+                        <div>
+                            <input
+                                type="password"
+                                placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                onBlur={() => validatePasswordField()}
+                                required
+                                aria-label="Password"
+                                className="w-full px-4 py-2 rounded-md bg-[#0e0e0e] text-white focus:outline-none focus:ring-2 focus:ring-white"
+                            />
+                            {passwordError && <p className="mt-1 text-sm text-red-500">{passwordError}</p>}
+                        </div>
 
-                <div className="mt-4 text-center">
-                    <Link href="/forgot-password" className="text-sm text-gray-400 hover:text-white">
-                        Forgot password?
-                    </Link>
-                </div>
+                        {/* FIXED: No login attempt counter visible to user */}
+                        {isTemporaryBlocked && (
+                            <div className="text-xs text-red-400 text-center">
+                                Account temporarily locked. Try again in {blockTimeRemaining} seconds.
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            className={`w-full font-bold py-2 px-4 rounded ${
+                                isFormValid && !isTemporaryBlocked && !isSubmitting
+                                    ? "bg-white hover:bg-gray-500 text-black"
+                                    : "bg-[#353535] text-gray-300 cursor-not-allowed"
+                            }`}
+                            disabled={!isFormValid || isTemporaryBlocked || isSubmitting}
+                            aria-label="Login button"
+                        >
+                            {isSubmitting ? "Logging in..." : isTemporaryBlocked ? `Try again in ${blockTimeRemaining}s` : "Login"}
+                        </button>
+                    </form>
+
+                    <p className="mt-4 text-center text-gray-400">
+                        Don't have an account?{" "}
+                        <Link href="/signup" className="text-white underline">
+                            Sign up
+                        </Link>
+                    </p>
+
+                    <div className="mt-4 text-center">
+                        <Link href="/forgot-password" className="text-sm text-gray-400 hover:text-white">
+                            Forgot password?
+                        </Link>
+                    </div>
+                </motion.div>
             </div>
         </div>
     );

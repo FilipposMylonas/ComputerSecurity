@@ -4,6 +4,8 @@ import Link from "next/link";
 import ReCAPTCHA from "react-google-recaptcha";
 import PasswordCheck from "../components/PasswordCheck";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Shield, User, Lock } from "lucide-react";
 
 const SignupForm: React.FC = () => {
     const router = useRouter();
@@ -250,124 +252,136 @@ const SignupForm: React.FC = () => {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-[#181818]">
-            <div className="bg-[#212121] p-8 rounded-xl shadow-md w-full max-w-md">
-                <h2 className="text-2xl font-bold text-white mb-6 text-center">
-                    Sign Up
-                </h2>
+        <div className="min-h-screen bg-[#181818] text-white">
 
-                {formSubmitError && (
-                    <div className="mb-4 p-3 bg-red-700 text-white rounded-md text-sm">
-                        {formSubmitError}
-                    </div>
-                )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <input
-                            type="text"
-                            placeholder="Name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            onBlur={validateName}
-                            required
-                            aria-label="Full name"
-                            className="w-full px-4 py-2 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-white"
-                        />
-                        {nameError && <p className="mt-1 text-sm text-red-500">{nameError}</p>}
-                    </div>
+            {/* Signup Form */}
+            <div className="flex items-center justify-center min-h-screen pt-16 px-4 sm:px-6 lg:px-8">
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="bg-[#212121] p-8 rounded-xl shadow-md w-full max-w-md"
+                >
+                    <h2 className="text-2xl font-bold text-white mb-6 text-center flex items-center justify-center">
+                        <User className="mr-2" size={30} /> Sign Up
+                    </h2>
 
-                    <div>
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            onBlur={validateEmail}
-                            required
-                            aria-label="Email address"
-                            className="w-full px-4 py-2 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-white"
-                        />
-                        {emailError && <p className="mt-1 text-sm text-red-500">{emailError}</p>}
-                    </div>
+                    {formSubmitError && (
+                        <div className="mb-4 p-3 bg-red-700 text-white rounded-md text-sm">
+                            {formSubmitError}
+                        </div>
+                    )}
 
-                    <div>
-                        <input
-                            type="password"
-                            placeholder="Password (min 8 characters)"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            onBlur={validatePassword}
-                            required
-                            aria-label="Password"
-                            className="w-full px-4 py-2 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-white"
-                        />
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <input
+                                type="text"
+                                placeholder="Name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                onBlur={validateName}
+                                required
+                                aria-label="Full name"
+                                className="w-full px-4 py-2 rounded-md bg-[#0e0e0e] text-white focus:outline-none focus:ring-2 focus:ring-white"
+                            />
+                            {nameError && <p className="mt-1 text-sm text-red-500">{nameError}</p>}
+                        </div>
 
-                        {/* Secure Password strength meter component */}
-                        <PasswordCheck password={password} />
+                        <div>
+                            <input
+                                type="email"
+                                placeholder="Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                onBlur={validateEmail}
+                                required
+                                aria-label="Email address"
+                                className="w-full px-4 py-2 rounded-md bg-[#0e0e0e] text-white focus:outline-none focus:ring-2 focus:ring-white"
+                            />
+                            {emailError && <p className="mt-1 text-sm text-red-500">{emailError}</p>}
+                        </div>
 
-                        {passwordError && <p className="mt-1 text-sm text-red-500">{passwordError}</p>}
-                    </div>
+                        <div>
+                            <input
+                                type="password"
+                                placeholder="Password (min 8 characters)"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                onBlur={validatePassword}
+                                required
+                                aria-label="Password"
+                                className="w-full px-4 py-2 rounded-md bg-[#0e0e0e] text-white focus:outline-none focus:ring-2 focus:ring-white"
+                            />
 
-                    <div>
-                        <input
-                            type="password"
-                            placeholder="Confirm Password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            onBlur={validateConfirmPassword}
-                            required
-                            aria-label="Confirm password"
-                            className="w-full px-4 py-2 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-white"
-                        />
-                        {confirmPasswordError && <p className="mt-1 text-sm text-red-500">{confirmPasswordError}</p>}
-                    </div>
+                            {/* Secure Password strength meter component */}
+                            <PasswordCheck password={password} />
 
-                    <div className="flex items-center">
-                        <input
-                            type="checkbox"
-                            id="tos"
-                            checked={tosAccepted}
-                            onChange={(e) => setTosAccepted(e.target.checked)}
-                            aria-label="Accept terms of service"
-                            className="mr-2"
-                        />
-                        <label htmlFor="tos" className="text-gray-400 text-sm">
-                            I agree to the <a href="/terms" className="text-white underline">Terms of Service</a> and <a href="/privacy" className="text-white underline">Privacy Policy</a>
-                        </label>
-                    </div>
-                    {tosError && <p className="mt-1 text-sm text-red-500">{tosError}</p>}
+                            {passwordError && <p className="mt-1 text-sm text-red-500">{passwordError}</p>}
+                        </div>
 
-                    <div className="flex justify-center">
-                        <ReCAPTCHA
-                            ref={recaptchaRef}
-                            sitekey="6LfEUOMqAAAAAEmTMr1Gz1ygxV4a0vkNO_MPOVgS"
-                            onChange={handleCaptchaChange}
-                            theme="dark"
-                        />
-                    </div>
+                        <div>
+                            <input
+                                type="password"
+                                placeholder="Confirm Password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                onBlur={validateConfirmPassword}
+                                required
+                                aria-label="Confirm password"
+                                className="w-full px-4 py-2 rounded-md bg-[#0e0e0e] text-white focus:outline-none focus:ring-2 focus:ring-white"
+                            />
+                            {confirmPasswordError && <p className="mt-1 text-sm text-red-500">{confirmPasswordError}</p>}
+                        </div>
 
-                    <button
-                        type="submit"
-                        className={`w-full font-bold py-2 px-4 rounded ${
-                            isFormValid && !isSubmitting
-                                ? "bg-white hover:bg-gray-200 text-black"
-                                : "bg-gray-600 text-gray-300 cursor-not-allowed"
-                        }`}
-                        disabled={!isFormValid || isSubmitting}
-                        aria-label="Sign up button"
-                    >
-                        {isSubmitting ? "Signing Up..." : "Sign Up"}
-                    </button>
-                </form>
+                        <div className="flex items-center">
+                            <input
+                                type="checkbox"
+                                id="tos"
+                                checked={tosAccepted}
+                                onChange={(e) => setTosAccepted(e.target.checked)}
+                                aria-label="Accept terms of service"
+                                className="mr-2"
+                            />
+                            <label htmlFor="tos" className="text-gray-400 text-sm">
+                                I agree to the <a href="/terms" className="text-white underline">Terms of Service</a> and <a href="/privacy" className="text-white underline">Privacy Policy</a>
+                            </label>
+                        </div>
+                        {tosError && <p className="mt-1 text-sm text-red-500">{tosError}</p>}
 
-                <p className="mt-4 text-center text-gray-400">
-                    Already have an account?{" "}
-                    <Link href="/login" className="text-white underline">
-                        Login
-                    </Link>
-                </p>
+                        <div className="flex justify-center">
+                            <ReCAPTCHA
+                                ref={recaptchaRef}
+                                sitekey="6LfEUOMqAAAAAEmTMr1Gz1ygxV4a0vkNO_MPOVgS"
+                                onChange={handleCaptchaChange}
+                                theme="dark"
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            className={`w-full font-bold py-2 px-4 rounded ${
+                                isFormValid && !isSubmitting
+                                    ? "bg-white hover:bg-gray-500 text-black"
+                                    : "bg-[#353535] text-gray-300 cursor-not-allowed"
+                            }`}
+                            disabled={!isFormValid || isSubmitting}
+                            aria-label="Sign up button"
+                        >
+                            {isSubmitting ? "Signing Up..." : "Sign Up"}
+                        </button>
+                    </form>
+
+                    <p className="mt-4 text-center text-gray-400">
+                        Already have an account?{" "}
+                        <Link href="/login" className="text-white underline">
+                            Login
+                        </Link>
+                    </p>
+                </motion.div>
             </div>
+
+
         </div>
     );
 };

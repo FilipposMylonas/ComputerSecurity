@@ -30,7 +30,7 @@ export default function FormInput({
                 onBlur={onBlur}
                 className={`w-full px-4 py-2 rounded ${
                     error ? "border-2 border-red-500" : ""
-                } bg-[#3d3d3d] text-white focus:outline-none focus:ring-2 focus:ring-white`}
+                } bg-[#353535] text-white focus:outline-none focus:ring-2 focus:ring-white`}
                 required={required}
             />
             {error && <p className="mt-1 text-sm text-red-500">{error}</p>}

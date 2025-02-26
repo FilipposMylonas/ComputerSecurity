@@ -2,14 +2,18 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import FormInput from "./FormInput";
+import { useRouter } from "next/navigation";
 
-export default function LoginForm() {
+export default function SecureLoginForm() {
+    const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [loginAttempts, setLoginAttempts] = useState(0);
-    const [isBlocked, setIsBlocked] = useState(false);
-    const [blockTimer, setBlockTimer] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // We don't store attempt counts client-side anymore
+    // These states are only for UI feedback purposes
+    const [isTemporaryBlocked, setIsTemporaryBlocked] = useState(false);
+    const [blockTimeRemaining, setBlockTimeRemaining] = useState(0);
 
     // Validation errors
     const [emailError, setEmailError] = useState("");
@@ -19,88 +23,54 @@ export default function LoginForm() {
     // Form submission state
     const [isFormValid, setIsFormValid] = useState(false);
 
-    // VULNERABILITY 1: Storing attempt data in localStorage where it can be manipulated
-    useEffect(() => {
-        // Load previous attempts from localStorage (vulnerable to user manipulation)
-        const storedAttempts = localStorage.getItem('loginAttempts');
-        const storedBlockTime = localStorage.getItem('blockUntil');
-
-        if (storedAttempts) {
-            setLoginAttempts(parseInt(storedAttempts));
-        }
-
-        if (storedBlockTime) {
-            const blockUntil = parseInt(storedBlockTime);
-            const now = new Date().getTime();
-
-            if (blockUntil > now) {
-                setIsBlocked(true);
-                setBlockTimer(Math.ceil((blockUntil - now) / 1000));
-            } else {
-                // Clear expired block
-                localStorage.removeItem('blockUntil');
-                localStorage.removeItem('loginAttempts');
-            }
-        }
-    }, []);
-
     // Validate form when inputs change
     useEffect(() => {
         const isValid =
             email.trim() !== "" &&
-            password !== "" &&
+            password.trim() !== "" &&
             emailError === "" &&
             passwordError === "";
 
         setIsFormValid(isValid);
     }, [email, password, emailError, passwordError]);
 
-    // Count down block timer if blocked
+    // Handle temporary block countdown
     useEffect(() => {
-        if (isBlocked && blockTimer > 0) {
+        if (isTemporaryBlocked && blockTimeRemaining > 0) {
             const timer = setTimeout(() => {
-                setBlockTimer(blockTimer - 1);
-
-                // VULNERABILITY 2: Updates localStorage on each tick (can be inspected)
-                localStorage.setItem('blockUntil', String(new Date().getTime() + blockTimer * 1000));
+                setBlockTimeRemaining(blockTimeRemaining - 1);
             }, 1000);
 
             return () => clearTimeout(timer);
-        } else if (isBlocked && blockTimer === 0) {
-            setIsBlocked(false);
-            setLoginAttempts(0);
-
-            // VULNERABILITY 3: Can be easily bypassed by clearing localStorage
-            localStorage.removeItem('loginAttempts');
-            localStorage.removeItem('blockUntil');
+        } else if (isTemporaryBlocked && blockTimeRemaining === 0) {
+            setIsTemporaryBlocked(false);
         }
-    }, [isBlocked, blockTimer]);
+    }, [isTemporaryBlocked, blockTimeRemaining]);
 
     const validatePasswordField = () => {
-        // For login, we only check if the password is not empty
-        if (!password) {
+        if (!password.trim()) {
             setPasswordError("Password is required");
-            return { isValid: false, message: "Password is required" };
+            return { isValid: false };
         }
         setPasswordError("");
-        return { isValid: true, message: "" };
+        return { isValid: true };
     };
 
-    // VULNERABILITY 4: Account enumeration - different error for invalid email vs password
+    // FIXED: No more account enumeration - use generic error messages
     const validateEmail = () => {
-        if (!email) {
+        if (!email.trim()) {
             setEmailError("Email is required");
-            return { isValid: false, message: "Email is required" };
+            return { isValid: false };
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             setEmailError("Please enter a valid email address");
-            return { isValid: false, message: "Invalid email format" };
+            return { isValid: false };
         }
 
         setEmailError("");
-        return { isValid: true, message: "" };
+        return { isValid: true };
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -115,53 +85,78 @@ export default function LoginForm() {
             return;
         }
 
-        if (isBlocked) {
-            setGeneralError(`Too many failed attempts. Please wait ${blockTimer} seconds.`);
+        if (isTemporaryBlocked) {
+            setGeneralError(`Please wait ${blockTimeRemaining} seconds before trying again.`);
             return;
         }
 
         try {
             setIsSubmitting(true);
 
-            // VULNERABILITY 5: Simple credentials check that could be bypassed with XSS
-            // Simulate API call with a delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // PADURARU CODE:
+            // Implement login endpoint on your backend
+            // POST to /api/auth/login with email and password
+            // Return proper JWT token on success, handle rate limiting on the server
+            // The response should include:
+            // - status: 'success' or 'error'
+            // - message: For errors only
+            // - token: JWT token on success
+            // - user: User object on success
+            // - blockDuration: If rate limited, how many seconds to wait
 
-            // Hardcoded credential check for demo purposes - INSECURE!
-            const isValidCredential = email === "admin@example.com" && password === "password123";
+            // API call to your backend
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                }),
+                // Prevent storing credentials in browser cache
+                cache: 'no-store',
+                credentials: 'same-origin',
+            });
 
-            if (isValidCredential) {
-                // Successful login
-                setLoginAttempts(0);
-                localStorage.removeItem('loginAttempts');
-                localStorage.removeItem('blockUntil');
+            const data = await response.json();
 
-                // Would typically redirect or update auth state here
-                alert("Login successful!");
-            } else {
-                // Failed login attempt
-                const newAttempts = loginAttempts + 1;
-                setLoginAttempts(newAttempts);
-                localStorage.setItem('loginAttempts', String(newAttempts));
-
-                // VULNERABILITY 6: Using small, fixed number of attempts with no IP-based blocking
-                if (newAttempts >= 3) {
-                    const blockDuration = 30; // 30 seconds block
-                    const blockUntil = new Date().getTime() + (blockDuration * 1000);
-
-                    setIsBlocked(true);
-                    setBlockTimer(blockDuration);
-                    localStorage.setItem('blockUntil', String(blockUntil));
-
-                    setGeneralError(`Too many failed attempts. Please wait ${blockDuration} seconds.`);
+            if (!response.ok) {
+                // Handle different error scenarios
+                if (response.status === 429) {
+                    // Too many attempts (rate limited)
+                    setIsTemporaryBlocked(true);
+                    setBlockTimeRemaining(data.blockDuration || 30);
+                    setGeneralError(`Too many login attempts. Please try again in ${data.blockDuration || 30} seconds.`);
+                } else if (response.status === 401) {
+                    // FIXED: Generic error message for invalid credentials
+                    setGeneralError("Invalid email or password. Please try again.");
                 } else {
-                    // VULNERABILITY 7: Revealing attempt count to user
-                    setGeneralError(`Invalid credentials. Attempts: ${newAttempts}/3`);
+                    // Other errors
+                    setGeneralError(data.message || "An error occurred during login. Please try again.");
                 }
+            } else {
+                // Successful login
+                // PADURARU CODE:
+                // On successful login, the backend should:
+                // 1. Return a signed JWT token with appropriate expiration
+                // 2. Include necessary user information WITHOUT sensitive data
+                // 3. Reset the failed attempt counter for this user/IP
+
+                // Store the token securely in an HttpOnly cookie (backend responsibility)
+                // Or if you need to store it in localStorage or sessionStorage:
+                if (data.token) {
+                    // This should ideally be an httpOnly cookie set by the server
+                    // Only use this as a fallback if cookies aren't an option
+                    sessionStorage.setItem('auth_token', data.token);
+                }
+
+                // Redirect to dashboard or home page
+                router.push('/dashboard');
             }
         } catch (error) {
             console.error("Login error:", error);
-            setGeneralError("An error occurred. Please try again.");
+            setGeneralError("A network error occurred. Please check your connection and try again.");
         } finally {
             setIsSubmitting(false);
         }
@@ -186,9 +181,10 @@ export default function LoginForm() {
                         placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        onBlur={validateEmail}
+                        onBlur={() => validateEmail()}
                         error={emailError}
                         required
+                        aria-label="Email address"
                     />
 
                     <FormInput
@@ -196,35 +192,30 @@ export default function LoginForm() {
                         placeholder="Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        onBlur={validatePasswordField}
+                        onBlur={() => validatePasswordField()}
                         error={passwordError}
                         required
+                        aria-label="Password"
                     />
 
-                    {/* VULNERABILITY 8: Status indication reveals account blocking state */}
-                    <div className="flex justify-between items-center">
-                        <div className="text-xs text-gray-400">
-                            {loginAttempts > 0 && (
-                                <span>Attempts: {loginAttempts}/3</span>
-                            )}
+                    {/* FIXED: No login attempt counter visible to user */}
+                    {isTemporaryBlocked && (
+                        <div className="text-xs text-red-400 text-center">
+                            Account temporarily locked. Try again in {blockTimeRemaining} seconds.
                         </div>
-                        {isBlocked && (
-                            <div className="text-xs text-red-400">
-                                Account temporarily locked
-                            </div>
-                        )}
-                    </div>
+                    )}
 
                     <button
                         type="submit"
                         className={`w-full font-bold py-2 px-4 rounded ${
-                            isFormValid && !isBlocked
+                            isFormValid && !isTemporaryBlocked && !isSubmitting
                                 ? "bg-white hover:bg-gray-200 text-black"
                                 : "bg-gray-600 text-gray-300 cursor-not-allowed"
                         }`}
-                        disabled={!isFormValid || isBlocked || isSubmitting}
+                        disabled={!isFormValid || isTemporaryBlocked || isSubmitting}
+                        aria-label="Login button"
                     >
-                        {isSubmitting ? "Logging in..." : isBlocked ? `Blocked (${blockTimer}s)` : "Login"}
+                        {isSubmitting ? "Logging in..." : isTemporaryBlocked ? `Try again in ${blockTimeRemaining}s` : "Login"}
                     </button>
                 </form>
 
@@ -236,20 +227,9 @@ export default function LoginForm() {
                 </p>
 
                 <div className="mt-4 text-center">
-                    <Link href="#" className="text-sm text-gray-400 hover:text-white">
+                    <Link href="/forgot-password" className="text-sm text-gray-400 hover:text-white">
                         Forgot password?
                     </Link>
-                </div>
-
-                {/* VULNERABILITY 9: Debug information visible in production */}
-                <div className="mt-6 p-2 border border-gray-700 rounded bg-gray-800">
-                    <div className="text-xs text-gray-400">
-                        <p>Debug Info (remove in production):</p>
-                        <p>Login attempts: {loginAttempts}</p>
-                        <p>Blocked status: {isBlocked ? "Yes" : "No"}</p>
-                        <p>Block timer: {blockTimer}s</p>
-                        <p>Demo credentials: admin@example.com / password123</p>
-                    </div>
                 </div>
             </div>
         </div>

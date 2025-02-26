@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Backend Implementation Guide for Authentication System
 
-## Getting Started
+## Key Authentication Features to Implement
 
-First, run the development server:
+### 1. User Authentication Endpoints
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+#### Login System
+The login form expects an API endpoint at `/api/auth/login` that:
+- Validates the email and password
+- Handles rate limiting for failed attempts
+- Returns appropriate JWT tokens upon successful authentication
+- Provides clear error messages without exposing sensitive information
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+#### Registration System
+The signup form posts to `/api/auth/register` and expects:
+- Email uniqueness validation
+- Password hashing with a strong algorithm
+- CAPTCHA verification with Google's API
+- Account creation with proper validation
+- Optional email verification system
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. Security Measures
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Here are some security features I've considered in the frontend that need backend support:
 
-## Learn More
+- **Rate Limiting**: The login form handles temporary blocks client-side, but we need server-side rate limiting
+- **CAPTCHA Validation**: The signup form collects CAPTCHA tokens, but they need server verification
+- **Password Storage**: Passwords should be properly hashed (bcrypt with appropriate rounds)
+- **JWT Implementation**: Consider token expiration, refresh mechanisms, and secure storage
 
-To learn more about Next.js, take a look at the following resources:
+## Freedom for Additional Features
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Feel free to expand on this foundation with features like:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Multi-factor Authentication**: Add SMS or email verification codes
+- **Session Management**: Track active sessions and allow users to view/terminate them
+- **Account Recovery**: Implement a secure password reset flow
+- **User Profiles**: Add endpoints for profile management
+- **Role-Based Access**: Implement different permission levels
+- **Audit Logging**: Track login attempts and security events
+- **IP-Based Security**: Add location-based alerts for suspicious logins
 
-## Deploy on Vercel
+## Technology Recommendations
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+You have complete freedom to choose your tech stack, but here are some suggestions:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Node.js with Express**: Fast to set up and matches our JavaScript frontend
+- **MongoDB/PostgreSQL**: Both work well for user data
+- **Redis**: Great for rate limiting and temporary blocks
+- **JWT Libraries**: jsonwebtoken for Node.js works well
+- **bcrypt**: Industry standard for password hashing

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import ReCAPTCHA from "react-google-recaptcha";
-// For local development, use localhost explicitly as the domain
+import PasswordStrengthMeter from "./PasswordStrengthMeter";
 
 const SignupForm: React.FC = () => {
     const [name, setName] = useState("");
@@ -103,14 +103,19 @@ const SignupForm: React.FC = () => {
                         className="w-full px-4 py-2 rounded-md bg-gray-800 text-white focus:outline-none"
                     />
 
-                    <input
-                        type="password"
-                        placeholder="Password (min 6 characters)"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="w-full px-4 py-2 rounded-md bg-gray-800 text-white focus:outline-none"
-                    />
+                    <div>
+                        <input
+                            type="password"
+                            placeholder="Password (min 6 characters)"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            className="w-full px-4 py-2 rounded-md bg-gray-800 text-white focus:outline-none"
+                        />
+
+                        {/* Password strength meter component */}
+                        <PasswordStrengthMeter password={password} />
+                    </div>
 
                     <input
                         type="password"
@@ -128,7 +133,6 @@ const SignupForm: React.FC = () => {
                             onChange={handleCaptchaChange}
                             theme="dark"
                         />
-                        {/* Using Google's test keys for development on localhost */}
                     </div>
 
                     <button

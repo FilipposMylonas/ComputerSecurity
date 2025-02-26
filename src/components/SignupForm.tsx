@@ -1,7 +1,8 @@
 "use client"
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import {SimpleCaptcha} from "@/components/SimpleCaptcha";
+import ReCAPTCHA from "react-google-recaptcha";
+// For local development, use localhost explicitly as the domain
 
 const SignupForm: React.FC = () => {
     const [name, setName] = useState("");
@@ -11,7 +12,9 @@ const SignupForm: React.FC = () => {
     const [formSubmitError, setFormSubmitError] = useState("");
     const [isFormValid, setIsFormValid] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [captchaValid, setCaptchaValid] = useState(false);
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
+    const recaptchaRef = useRef<ReCAPTCHA>(null);
 
     useEffect(() => {
         setIsFormValid(
@@ -19,13 +22,13 @@ const SignupForm: React.FC = () => {
             email.trim() !== "" &&
             password.length >= 6 &&
             confirmPassword === password &&
-            captchaValid
+            !!captchaToken
         );
-    }, [name, email, password, confirmPassword, captchaValid]);
+    }, [name, email, password, confirmPassword, captchaToken]);
 
-    const handleCaptchaChange = (isValid: boolean) => {
-        console.log("Captcha validation result:", isValid);
-        setCaptchaValid(isValid);
+    const handleCaptchaChange = (token: string | null) => {
+        console.log("Captcha token received:", token ? "Valid token" : "No token");
+        setCaptchaToken(token);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -41,6 +44,9 @@ const SignupForm: React.FC = () => {
             setIsSubmitting(true);
             console.log("Signup form is valid, proceeding with submission...");
 
+            // In a real implementation, you would verify the token on your server
+            // by making a request to the Google reCAPTCHA API
+
             // Simulate API call
             await new Promise((resolve) => setTimeout(resolve, 1000));
             console.log("User registered successfully");
@@ -50,7 +56,10 @@ const SignupForm: React.FC = () => {
             setEmail("");
             setPassword("");
             setConfirmPassword("");
-            setCaptchaValid(false);
+            setCaptchaToken(null);
+            if (recaptchaRef.current) {
+                recaptchaRef.current.reset();
+            }
 
         } catch (error) {
             console.error("Signup error:", error);
@@ -113,7 +122,13 @@ const SignupForm: React.FC = () => {
                     />
 
                     <div className="flex justify-center">
-                        <SimpleCaptcha onChange={handleCaptchaChange} />
+                        <ReCAPTCHA
+                            ref={recaptchaRef}
+                            sitekey="6LfEUOMqAAAAAEmTMr1Gz1ygxV4a0vkNO_MPOVgS"
+                            onChange={handleCaptchaChange}
+                            theme="dark"
+                        />
+                        {/* Using Google's test keys for development on localhost */}
                     </div>
 
                     <button

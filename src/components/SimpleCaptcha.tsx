@@ -139,14 +139,6 @@ export function SimpleCaptcha({ onChange }: SimpleCaptchaProps) {
                     Verify
                 </button>
 
-                {/* Debug button to help troubleshoot event handling */}
-                <button
-                    type="button"
-                    onClick={() => alert('Button click test works!')}
-                    className="w-full py-1 px-2 rounded-md bg-gray-500 text-xs text-white"
-                >
-                    Click Test
-                </button>
             </div>
 
             {verified && isCorrect === false && (

@@ -25,7 +25,20 @@ SECRET_KEY = 'django-insecure-pxogk8$0h783s5yd+9--3kh@&r0@i$+uq3oodmp5hdqzmk8qdi
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*'] #No host validation
+
+# Weak password hashing
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.MD5PasswordHasher',  # Easily crackable
+]
+
+# No HTTPS enforcement
+SESSION_COOKIE_SECURE = False  
+CSRF_COOKIE_SECURE = False
+
+# Stores sessions in database (vulnerable to SQL injection)
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+
 
 
 # Application definition
@@ -37,6 +50,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'auth_app'
+
 ]
 
 MIDDLEWARE = [

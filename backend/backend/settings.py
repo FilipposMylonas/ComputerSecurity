@@ -51,7 +51,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'auth_app'
+    'auth_app',
+    'corsheaders'
 
 ]
 
@@ -63,6 +64,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://192.168.2.14:3000",  # Next.js frontend
 ]
 
 ROOT_URLCONF = 'backend.urls'

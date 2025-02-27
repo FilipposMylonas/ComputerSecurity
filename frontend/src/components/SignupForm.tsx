@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import ReCAPTCHA from "react-google-recaptcha";
 import PasswordStrengthMeter from "./PasswordStrengthMeter";
+import { signUpAction } from "@/app/actions/auth";
 
 const SignupForm: React.FC = () => {
     const [name, setName] = useState("");
@@ -48,18 +49,21 @@ const SignupForm: React.FC = () => {
             // by making a request to the Google reCAPTCHA API
 
             // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            console.log("User registered successfully");
+            const data= await signUpAction(email,password)
+            if (data.status=='success'){
+                console.log("User registered successfully");
 
-            // Reset the form
-            setName("");
-            setEmail("");
-            setPassword("");
-            setConfirmPassword("");
-            setCaptchaToken(null);
-            if (recaptchaRef.current) {
-                recaptchaRef.current.reset();
+                // Reset the form
+                setName("");
+                setEmail("");
+                setPassword("");
+                setConfirmPassword("");
+                setCaptchaToken(null);
+                if (recaptchaRef.current) {
+                    recaptchaRef.current.reset();
+                }
             }
+            
 
         } catch (error) {
             console.error("Signup error:", error);

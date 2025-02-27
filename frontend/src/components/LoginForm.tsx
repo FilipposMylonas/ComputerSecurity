@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import FormInput from "./FormInput";
+import { loginAction } from "@/app/actions/auth";
 
 export default function LoginForm() {
     const [email, setEmail] = useState("");
@@ -10,6 +11,7 @@ export default function LoginForm() {
     const [isBlocked, setIsBlocked] = useState(false);
     const [blockTimer, setBlockTimer] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [message, setMessage] = useState("");
 
     // Validation errors
     const [emailError, setEmailError] = useState("");
@@ -93,11 +95,11 @@ export default function LoginForm() {
             return { isValid: false, message: "Email is required" };
         }
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            setEmailError("Please enter a valid email address");
-            return { isValid: false, message: "Invalid email format" };
-        }
+        // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // if (!emailRegex.test(email)) {
+        //     setEmailError("Please enter a valid email address");
+        //     return { isValid: false, message: "Invalid email format" };
+        // }
 
         setEmailError("");
         return { isValid: true, message: "" };
@@ -120,24 +122,24 @@ export default function LoginForm() {
             return;
         }
 
+        e.preventDefault()
+
         try {
             setIsSubmitting(true);
 
+            const data=await loginAction(email,password);
             // VULNERABILITY 5: Simple credentials check that could be bypassed with XSS
-            // Simulate API call with a delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // Hardcoded credential check for demo purposes - INSECURE!
-            const isValidCredential = email === "admin@example.com" && password === "password123";
+            //await new Promise(resolve => setTimeout(resolve, 1000));
 
-            if (isValidCredential) {
+            if (data.message=="Login successful") {
                 // Successful login
                 setLoginAttempts(0);
                 localStorage.removeItem('loginAttempts');
                 localStorage.removeItem('blockUntil');
 
                 // Would typically redirect or update auth state here
-                alert("Login successful!");
+                alert(data.message);
             } else {
                 // Failed login attempt
                 const newAttempts = loginAttempts + 1;
@@ -182,7 +184,7 @@ export default function LoginForm() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <FormInput
-                        type="email"
+                        type="text"
                         placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}

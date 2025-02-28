@@ -23,6 +23,7 @@ def vulnerable_login_view(request):
         return Response({"error": "Invalid credentials"}, status.HTTP_400_BAD_REQUEST)
 
     return Response({"error": "Only POST allowed"}, status.HTTP_405_METHOD_NOT_ALLOWED)
+
 @api_view(['POST'])
 def login_view(request):
     email = request.data.get("email")

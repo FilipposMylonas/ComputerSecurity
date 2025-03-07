@@ -10,6 +10,7 @@ export default function SecureLoginForm() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [message, setMessage] = useState("");
 
     // We don't store attempt counts client-side anymore
     // These states are only for UI feedback purposes
@@ -91,6 +92,8 @@ export default function SecureLoginForm() {
             return;
         }
 
+        e.preventDefault()
+
         try {
             setIsSubmitting(true);
 
@@ -106,18 +109,14 @@ export default function SecureLoginForm() {
             // - blockDuration: If rate limited, how many seconds to wait
 
             // API call to your backend
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/login`, {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
-                // Prevent storing credentials in browser cache
-                cache: 'no-store',
-                credentials: 'same-origin',
+                body: JSON.stringify({ email, password }),
+                credentials: "include",  // Make sure cookies are sent
+                cache: "no-store",  // Ensure fresh API responses
             });
 
             const data = await response.json();

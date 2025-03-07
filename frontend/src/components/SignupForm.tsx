@@ -198,18 +198,14 @@ const SignupForm: React.FC = () => {
             // 6. Send verification email
             // 7. Return appropriate response
 
-            const response = await fetch('/api/auth/register', {
-                method: 'POST',
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/register`, {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    name,
-                    email,
-                    password,
-                    captchaToken
-                }),
-                cache: 'no-store',
+                body: JSON.stringify({ email, password }),
+                credentials: "include",  // Make sure cookies are sent
+                cache: "no-store",  // Ensure fresh API responses
             });
 
             const data = await response.json();

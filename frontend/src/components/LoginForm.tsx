@@ -95,11 +95,7 @@ export default function LoginForm() {
             return { isValid: false, message: "Email is required" };
         }
 
-        // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        // if (!emailRegex.test(email)) {
-        //     setEmailError("Please enter a valid email address");
-        //     return { isValid: false, message: "Invalid email format" };
-        // }
+        
 
         setEmailError("");
         return { isValid: true, message: "" };
@@ -130,16 +126,15 @@ export default function LoginForm() {
             const data=await loginAction(email,password);
             // VULNERABILITY 5: Simple credentials check that could be bypassed with XSS
 
-            //await new Promise(resolve => setTimeout(resolve, 1000));
 
-            if (data.message=="Login successful") {
+            if (data.status=="success") {
                 // Successful login
                 setLoginAttempts(0);
                 localStorage.removeItem('loginAttempts');
                 localStorage.removeItem('blockUntil');
 
                 // Would typically redirect or update auth state here
-                alert(data.message);
+                alert("Login successful");
             } else {
                 // Failed login attempt
                 const newAttempts = loginAttempts + 1;

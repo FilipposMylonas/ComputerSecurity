@@ -1,57 +1,62 @@
-from .models import UserApp as User
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from .serializers import *
-import json
+
 from django.http import JsonResponse
 from django.db import connection
+from django.views.decorators.csrf import csrf_exempt
 
-@api_view(['POST'])
-def vulnerable_login_view(request):
-    if request.method == "POST":
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-
-        query = f"SELECT * FROM auth_app_userapp WHERE email='{email}' AND password='{password}'"
-        with connection.cursor() as cursor:
-            cursor.execute(query)  # ⚠️ Directly inserting user input - vulnerable!
-            user = cursor.fetchone()
-
-        if user:
-            return Response({"message": "Login successful", "email": email},status.HTTP_200_OK)
-        return Response({"error": "Invalid credentials"}, status.HTTP_400_BAD_REQUEST)
-
-    return Response({"error": "Only POST allowed"}, status.HTTP_405_METHOD_NOT_ALLOWED)
-
-@api_view(['POST'])
+@csrf_exempt
 def login_view(request):
-    email = request.data.get("email")
-    password = request.data.get("password")
+    if request.method == 'POST':
+        email = request.POST.get('email', '')
+        password = request.POST.get('password', '')
 
-    if not email or not password:
-        return Response({"error": "Missing username or password"}, status.HTTP_400_BAD_REQUEST)
+        # --- Vulnerability: SQL Injection ---
+        # User input is directly used in an SQL query without sanitization
+        query = f"SELECT id, email, password FROM auth_app_userapp WHERE email = '{email}' AND password = '{password}'"
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            row = cursor.fetchone()
 
-    # Fetch user with plaintext password (vulnerable)
-    try:
-        user = User.objects.get(email=email)
-        if user.password == password:  # BAD: Plaintext password comparison
-            return Response({"message": "Login successful", "user_id": user.id})
+        if row:
+            # --- Vulnerability: Broken Authentication ---
+            # Storing user session insecurely without a proper token system
+            request.session['user_id'] = row[0]
+            request.session['email'] = row[1]
+            return JsonResponse({
+                'status': 'success',
+                'user_id': row[0],
+                'email': row[1]
+            })
         else:
-            return Response({"error": "Invalid credentials"}, status.HTTP_401_UNAUTHORIZED)
-    except User.DoesNotExist:
-        return Response({"error": "Invalid credentials"}, status.HTTP_401_UNAUTHORIZED)
+            # --- Vulnerability: XSS in Error Message ---
+            # Directly reflecting user input in the error message
+            return JsonResponse({
+                'status': 'fail',
+                'error': "Login failed for email: " + email  # Potential XSS attack
+            })
 
+    return JsonResponse({'error': 'Only POST method is allowed.'}, status=405)
 
-@api_view(['POST'])
-def vulnerable_register(request):
-    # No CAPTCHA or hashing
-    serializer=UserSerializer(data=request.data)
-    if serializer.is_valid():
-        User.objects.create(
-            email=serializer.data.get("email"),
-            password=serializer.data.get('password')  # Plaintext
-        )
-        return Response({"status": "success"},status.HTTP_200_OK)
-    else:
-        return Response({"status": "user not created"},status.HTTP_200_OK)
+@csrf_exempt
+def signup_view(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '')
+        password = request.POST.get('password', '')
+
+        # --- Vulnerability: No Input Validation ---
+        # Allows empty emails and passwords
+        if not email or not password:
+            return JsonResponse({'status': 'fail', 'error': 'Email and password cannot be empty!'})
+
+        # --- Vulnerability: SQL Injection ---
+        # Directly inserting user input into an SQL query
+        query = f"INSERT INTO auth_app_userapp (email, password) VALUES ('{email}', '{password}')"
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+        except Exception as e:
+            # No proper error handling
+            return JsonResponse({'status': 'fail', 'error': str(e)})
+
+        return JsonResponse({'status': 'success', 'message': 'User registered successfully!'})
+
+    return JsonResponse({'error': 'Only POST method is allowed.'}, status=405)

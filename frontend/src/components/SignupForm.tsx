@@ -6,6 +6,7 @@ import PasswordCheck from "../components/PasswordCheck";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Shield, User, Lock } from "lucide-react";
+import { signUpAction } from "@/app/actions/auth";
 
 const SignupForm: React.FC = () => {
     const router = useRouter();
@@ -166,78 +167,47 @@ const SignupForm: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormSubmitError("");
-
+    
         // Run all validations
         const isNameValid = validateName();
         const isEmailValid = validateEmail();
         const isPasswordValid = validatePassword();
         const isConfirmPasswordValid = validateConfirmPassword();
         const isTosValid = validateTos();
-
+    
         if (!(isNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid && isTosValid)) {
             return;
         }
-
+    
         if (!captchaToken) {
             setFormSubmitError("Please complete the CAPTCHA verification");
             return;
         }
-
+    
         try {
             setIsSubmitting(true);
-
-            // PADURARU CODE:
-            // Implement user registration endpoint
-            // POST to /api/auth/register with user data
-            // The backend should:
-            // 1. Verify the CAPTCHA token with Google's API
-            // 2. Check for existing email
-            // 3. Validate all inputs server-side
-            // 4. Hash the password with bcrypt (10+ rounds)
-            // 5. Store user in database
-            // 6. Send verification email
-            // 7. Return appropriate response
-
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/register`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ email, password }),
-                credentials: "include",  // Make sure cookies are sent
-                cache: "no-store",  // Ensure fresh API responses
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                // Handle different error scenarios
-                if (response.status === 400) {
-                    // Validation errors
+    
+            // Call signup function from actions.ts
+            const data = await signUpAction(email, password);
+    
+            // Check if registration was successful
+            if (data.status === "success") {
+                // Redirect to success page or login page
+                router.push("/registration-success");
+            } else {
+                // Handle error scenarios from API response
+                if (data.status === 400) {
                     setFormSubmitError(data.message || "Please check your information and try again.");
-                } else if (response.status === 409) {
-                    // Email already exists
+                } else if (data.status === 409) {
                     setFormSubmitError("An account with this email already exists.");
-                } else if (response.status === 403) {
-                    // CAPTCHA verification failed
+                } else if (data.status === 403) {
                     setFormSubmitError("CAPTCHA verification failed. Please try again.");
                     if (recaptchaRef.current) {
                         recaptchaRef.current.reset();
                     }
                 } else {
-                    // Other errors
                     setFormSubmitError(data.message || "An error occurred. Please try again later.");
                 }
-            } else {
-                // Successful registration
-                // PADURARU CODE:
-                // On successful registration, the backend should:
-                // 1. Return success status
-                // 2. Optionally pre-authenticate the user
-                // 3. Provide next steps (e.g., email verification required)
-
-                // Redirect to verification page or login
-                router.push('/registration-success');
             }
         } catch (error) {
             console.error("Registration error:", error);
@@ -246,7 +216,7 @@ const SignupForm: React.FC = () => {
             setIsSubmitting(false);
         }
     };
-
+    
     return (
         <div className="min-h-screen bg-[#181818] text-white">
 

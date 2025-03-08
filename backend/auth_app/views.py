@@ -1,57 +1,46 @@
-from .models import UserApp as User
-from rest_framework.decorators import api_view
+from django.contrib.auth import get_user_model
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import *
-import json
-from django.http import JsonResponse
-from django.db import connection
+from rest_framework_simplejwt.tokens import RefreshToken
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
+from django.views.decorators.csrf import csrf_exempt
+
+User = get_user_model()
 
 @api_view(['POST'])
-def vulnerable_login_view(request):
-    if request.method == "POST":
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-
-        query = f"SELECT * FROM auth_app_userapp WHERE email='{email}' AND password='{password}'"
-        with connection.cursor() as cursor:
-            cursor.execute(query)  # ⚠️ Directly inserting user input - vulnerable!
-            user = cursor.fetchone()
-
-        if user:
-            return Response({"message": "Login successful", "email": email},status.HTTP_200_OK)
-        return Response({"error": "Invalid credentials"}, status.HTTP_400_BAD_REQUEST)
-
-    return Response({"error": "Only POST allowed"}, status.HTTP_405_METHOD_NOT_ALLOWED)
-
-@api_view(['POST'])
-def login_view(request):
-    email = request.data.get("email")
-    password = request.data.get("password")
-
-    if not email or not password:
-        return Response({"error": "Missing username or password"}, status.HTTP_400_BAD_REQUEST)
-
-    # Fetch user with plaintext password (vulnerable)
-    try:
-        user = User.objects.get(email=email)
-        if user.password == password:  # BAD: Plaintext password comparison
-            return Response({"message": "Login successful", "user_id": user.id})
-        else:
-            return Response({"error": "Invalid credentials"}, status.HTTP_401_UNAUTHORIZED)
-    except User.DoesNotExist:
-        return Response({"error": "Invalid credentials"}, status.HTTP_401_UNAUTHORIZED)
-
-
-@api_view(['POST'])
-def vulnerable_register(request):
-    # No CAPTCHA or hashing
-    serializer=UserSerializer(data=request.data)
+@permission_classes([AllowAny])
+def register_user(request):
+    serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
-        User.objects.create(
-            email=serializer.data.get("email"),
-            password=serializer.data.get('password')  # Plaintext
-        )
-        return Response({"status": "success"},status.HTTP_200_OK)
-    else:
-        return Response({"status": "user not created"},status.HTTP_200_OK)
+        serializer.save()
+        return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_user(request):
+    serializer = LoginSerializer(data=request.data, context={'request': request})
+    if serializer.is_valid():
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
+    print(serializer.errors)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_user(request):
+    try:
+        refresh_token = request.data["refresh"]
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+    except Exception:
+        return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_profile(request):
+    user = request.user
+    serializer = UserSerializer(user)
+    return Response(serializer.data)

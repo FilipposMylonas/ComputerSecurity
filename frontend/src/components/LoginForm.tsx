@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Shield, Lock, User } from "lucide-react";
+import { loginAction } from "@/app/actions/client_auth";
 
 export default function SecureLoginForm() {
     const router = useRouter();
@@ -78,81 +79,47 @@ export default function SecureLoginForm() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setGeneralError("");
-
+    
         // Validate inputs
         const emailValidation = validateEmail();
         const passwordValidation = validatePasswordField();
-
+    
         if (!emailValidation.isValid || !passwordValidation.isValid) {
             return;
         }
-
+    
         if (isTemporaryBlocked) {
             setGeneralError(`Please wait ${blockTimeRemaining} seconds before trying again.`);
             return;
         }
-
-        e.preventDefault()
-
+    
         try {
             setIsSubmitting(true);
-
-            // PADURARU CODE:
-            // Implement login endpoint on your backend
-            // POST to /api/auth/login with email and password
-            // Return proper JWT token on success, handle rate limiting on the server
-            // The response should include:
-            // - status: 'success' or 'error'
-            // - message: For errors only
-            // - token: JWT token on success
-            // - user: User object on success
-            // - blockDuration: If rate limited, how many seconds to wait
-
-            // API call to your backend
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/login`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ email, password }),
-                credentials: "include",  // Make sure cookies are sent
-                cache: "no-store",  // Ensure fresh API responses
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                // Handle different error scenarios
-                if (response.status === 429) {
+    
+            // Call login function from actions.ts
+            const data = await loginAction(email, password);
+    
+            // Check if login was successful
+            if (data.access) {
+                // Store the token securely
+                sessionStorage.setItem('auth_token', data.access);
+    
+                // Redirect to dashboard
+                router.push('/dashboard');
+            } else {
+                // Handle possible error scenarios from the API
+                if (data.status === 429) {
                     // Too many attempts (rate limited)
                     setIsTemporaryBlocked(true);
                     setBlockTimeRemaining(data.blockDuration || 30);
                     setGeneralError(`Too many login attempts. Please try again in ${data.blockDuration || 30} seconds.`);
-                } else if (response.status === 401) {
-                    // FIXED: Generic error message for invalid credentials
+                } else if (data.status === 401) {
+                    // Invalid credentials
                     setGeneralError("Invalid email or password. Please try again.");
                 } else {
-                    // Other errors
+                    // Other API errors
                     setGeneralError(data.message || "An error occurred during login. Please try again.");
                 }
-            } else {
-                // Successful login
-                // PADURARU CODE:
-                // On successful login, the backend should:
-                // 1. Return a signed JWT token with appropriate expiration
-                // 2. Include necessary user information WITHOUT sensitive data
-                // 3. Reset the failed attempt counter for this user/IP
-
-                // Store the token securely in an HttpOnly cookie (backend responsibility)
-                // Or if you need to store it in localStorage or sessionStorage:
-                if (data.token) {
-                    // This should ideally be an httpOnly cookie set by the server
-                    // Only use this as a fallback if cookies aren't an option
-                    sessionStorage.setItem('auth_token', data.token);
-                }
-
-                // Redirect to dashboard or home page
-                router.push('/dashboard');
             }
         } catch (error) {
             console.error("Login error:", error);
@@ -161,7 +128,7 @@ export default function SecureLoginForm() {
             setIsSubmitting(false);
         }
     };
-
+    
     return (
         <div className="min-h-screen bg-[#181818] text-white">
             {/* Signup Form */}
